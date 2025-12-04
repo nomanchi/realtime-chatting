@@ -5,7 +5,7 @@ import type { Message } from './src/types/chat'
 
 const dev = process.env.NODE_ENV !== 'production'
 const hostname = 'localhost'
-const port = 3002
+const port = 4001
 
 const app = next({ dev, hostname, port })
 const handler = app.getRequestHandler()

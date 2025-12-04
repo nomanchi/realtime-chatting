@@ -19,8 +19,8 @@ class SocketManager {
 
     // Get server URL from current location (supports localhost and network access)
     const serverUrl = typeof window !== 'undefined'
-      ? `${window.location.protocol}//${window.location.hostname}:3002`
-      : 'http://localhost:3002'
+      ? `${window.location.protocol}//${window.location.hostname}:4001`
+      : 'http://localhost:4001'
 
     // Connect to Socket.io server
     this.socket = io(serverUrl, {
