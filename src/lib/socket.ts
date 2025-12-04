@@ -12,7 +12,7 @@ class SocketManager {
   private usersHandlers: UsersHandler[] = []
   private currentUserName: string = ''
 
-  connect(userName: string) {
+  connect(userName: string, token?: string) {
     if (this.socket?.connected) return
 
     this.currentUserName = userName
@@ -22,9 +22,10 @@ class SocketManager {
       ? `${window.location.protocol}//${window.location.hostname}:4001`
       : 'http://localhost:4001'
 
-    // Connect to Socket.io server
+    // Connect to Socket.io server with optional authentication
     this.socket = io(serverUrl, {
-      transports: ['websocket', 'polling']
+      transports: ['websocket', 'polling'],
+      auth: token ? { token } : undefined
     })
 
     this.socket.on('connect', () => {
