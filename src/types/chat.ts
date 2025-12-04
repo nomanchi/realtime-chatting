@@ -5,6 +5,8 @@ export interface Message {
   content: string
   timestamp: number
   status?: 'sending' | 'sent' | 'failed'
+  imageUrl?: string
+  imageData?: string  // base64 encoded image
 }
 
 export interface User {

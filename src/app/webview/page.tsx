@@ -90,7 +90,7 @@ export default function WebViewPage() {
   return (
     <div className="flex flex-col h-screen bg-background">
       {/* Mobile-optimized header */}
-      <ChatHeader title="채팅" className="shrink-0" />
+      <ChatHeader title="채팅" className="shrink-0" showUserListPopover={true} />
 
       {/* Message area */}
       <div className="flex-1 overflow-hidden">

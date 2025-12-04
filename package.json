@@ -20,7 +20,8 @@
     "lucide-react": "^0.460.0",
     "date-fns": "^4.1.0",
     "socket.io": "^4.8.1",
-    "socket.io-client": "^4.8.1"
+    "socket.io-client": "^4.8.1",
+    "emoji-picker-react": "^4.12.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

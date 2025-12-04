@@ -51,7 +51,7 @@ app.prepare().then(() => {
       console.log(`${userName} joined. Total users: ${connectedUsers.size}`)
     })
 
-    // Handle message
+    // Handle message (including images)
     socket.on('message:send', (message: Omit<Message, 'id' | 'timestamp'>) => {
       const fullMessage: Message = {
         ...message,
@@ -60,13 +60,14 @@ app.prepare().then(() => {
         status: 'sent'
       }
 
-      // Store message
+      // Store message (including imageData if present)
       messages.push(fullMessage)
 
       // Broadcast to all users including sender
       io.emit('message:received', fullMessage)
 
-      console.log(`Message from ${message.senderName}: ${message.content}`)
+      const contentPreview = message.imageData ? '[이미지]' : message.content
+      console.log(`Message from ${message.senderName}: ${contentPreview}`)
     })
 
     // Handle typing indicator
