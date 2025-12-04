@@ -5,13 +5,14 @@ import { useChatStore } from '@/store/chat-store'
 import { socketManager } from '@/lib/socket'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Send, Image as ImageIcon, Smile } from 'lucide-react'
-import EmojiPicker, { EmojiClickData } from 'emoji-picker-react'
-import { Popover } from '@/components/ui/popover'
+import { Send, Plus, Smile } from 'lucide-react'
+import { EmojiPickerSheet } from './EmojiPickerSheet'
+import { AttachmentMenuSheet } from './AttachmentMenuSheet'
 
 export function MessageInput() {
   const [message, setMessage] = useState('')
   const [emojiOpen, setEmojiOpen] = useState(false)
+  const [attachmentMenuOpen, setAttachmentMenuOpen] = useState(false)
   const { currentUser } = useChatStore()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -35,9 +36,8 @@ export function MessageInput() {
     }
   }
 
-  const handleEmojiClick = (emojiData: EmojiClickData) => {
-    setMessage(prev => prev + emojiData.emoji)
-    setEmojiOpen(false)
+  const handleEmojiSelect = (emoji: string) => {
+    setMessage(prev => prev + emoji)
   }
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -80,58 +80,71 @@ export function MessageInput() {
   }
 
   return (
-    <div className="flex items-center gap-2 p-4 border-t bg-background">
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={handleImageSelect}
-      />
+    <>
+      <div className="flex items-center gap-2 p-4 border-t bg-background">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleImageSelect}
+        />
 
-      <Button
-        onClick={() => fileInputRef.current?.click()}
-        variant="ghost"
-        size="icon"
-        className="shrink-0"
-        title="이미지 첨부"
-      >
-        <ImageIcon className="h-5 w-5" />
-      </Button>
+        {/* + Button */}
+        <Button
+          onClick={() => setAttachmentMenuOpen(true)}
+          variant="ghost"
+          size="icon"
+          className="shrink-0"
+          title="첨부하기"
+        >
+          <Plus className="h-5 w-5" />
+        </Button>
 
-      <Popover
+        {/* Input */}
+        <Input
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="메시지를 입력하세요..."
+          className="flex-1"
+        />
+
+        {/* Emoji Button */}
+        <Button
+          onClick={() => setEmojiOpen(!emojiOpen)}
+          variant="ghost"
+          size="icon"
+          className="shrink-0"
+          title="이모티콘"
+        >
+          <Smile className="h-5 w-5" />
+        </Button>
+
+        {/* Send Button */}
+        <Button
+          onClick={handleSend}
+          disabled={!message.trim()}
+          size="icon"
+          className="shrink-0"
+        >
+          <Send className="h-4 w-4" />
+        </Button>
+      </div>
+
+      {/* Emoji Picker Sheet */}
+      <EmojiPickerSheet
         open={emojiOpen}
         onOpenChange={setEmojiOpen}
-        trigger={
-          <Button
-            variant="ghost"
-            size="icon"
-            className="shrink-0"
-            title="이모티콘"
-          >
-            <Smile className="h-5 w-5" />
-          </Button>
-        }
-        align="start"
-      >
-        <EmojiPicker onEmojiClick={handleEmojiClick} />
-      </Popover>
-
-      <Input
-        value={message}
-        onChange={(e) => setMessage(e.target.value)}
-        onKeyDown={handleKeyDown}
-        placeholder="메시지를 입력하세요..."
-        className="flex-1"
+        onEmojiSelect={handleEmojiSelect}
       />
-      <Button
-        onClick={handleSend}
-        disabled={!message.trim()}
-        size="icon"
-        className="shrink-0"
-      >
-        <Send className="h-4 w-4" />
-      </Button>
-    </div>
+
+      {/* Attachment Menu Sheet */}
+      <AttachmentMenuSheet
+        open={attachmentMenuOpen}
+        onOpenChange={setAttachmentMenuOpen}
+        onImageSelect={() => fileInputRef.current?.click()}
+      />
+    </>
   )
 }
