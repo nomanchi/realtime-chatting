@@ -9,29 +9,37 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.59.0",
+    "bcryptjs": "^3.0.3",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "cookie": "^1.1.1",
+    "date-fns": "^4.1.0",
+    "dotenv": "^17.2.3",
+    "emoji-picker-react": "^4.12.0",
+    "jsonwebtoken": "^9.0.2",
+    "lucide-react": "^0.460.0",
+    "mongoose": "^9.0.0",
     "next": "16.0.7",
     "react": "19.2.0",
     "react-dom": "19.2.0",
-    "@tanstack/react-query": "^5.59.0",
-    "zustand": "^5.0.2",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "tailwind-merge": "^2.5.5",
-    "lucide-react": "^0.460.0",
-    "date-fns": "^4.1.0",
     "socket.io": "^4.8.1",
-    "socket.io-client": "^4.8.1",
-    "emoji-picker-react": "^4.12.0"
+    "socket.io-client": "^4.5.0",
+    "tailwind-merge": "^2.5.5",
+    "zustand": "^5.0.2"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cookie": "^0.6.0",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.0.7",
     "tailwindcss": "^4",
-    "typescript": "^5",
-    "tsx": "^4.19.2"
+    "tsx": "^4.19.2",
+    "typescript": "^5"
   }
 }
