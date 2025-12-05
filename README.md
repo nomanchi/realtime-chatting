@@ -103,18 +103,18 @@ npm run dev
 ```
 
 서버가 실행되면:
-- **Next.js 앱**: http://localhost:3002 (또는 자동 할당된 포트)
+- **Next.js 앱**: http://localhost:4001 (또는 자동 할당된 포트)
 - **Socket.io 서버**: http://localhost:4001 (또는 다음 사용 가능한 포트)
-- **로그인 페이지**: http://localhost:3002/login
-- **회원가입 페이지**: http://localhost:3002/register
-- **채팅 (브라우저)**: http://localhost:3002/browser
-- **채팅 (WebView)**: http://localhost:3002/webview
+- **로그인 페이지**: http://localhost:4001/login
+- **회원가입 페이지**: http://localhost:4001/register
+- **채팅 (브라우저)**: http://localhost:4001/browser
+- **채팅 (WebView)**: http://localhost:4001/webview
 
 ## 📖 사용 방법
 
 ### 회원가입 및 로그인
 
-1. http://localhost:3002 접속
+1. http://localhost:4001 접속
 2. "회원가입" 클릭
 3. 이메일, 사용자명, 비밀번호 입력
 4. 자동으로 로그인되어 채팅으로 이동
@@ -130,7 +130,7 @@ npm run dev
 - 로그아웃 버튼으로 세션 종료
 
 **익명 사용자:**
-1. http://localhost:3002/browser 접속
+1. http://localhost:4001/browser 접속
 2. 이름 입력
 3. "채팅 참여하기" 클릭
 4. 채팅 시작! (메시지는 메모리에만 저장)
@@ -142,7 +142,7 @@ npm run dev
 
 ### 모바일/WebView에서
 
-1. http://YOUR_IP:3002/webview 접속
+1. http://YOUR_IP:4001/webview 접속
 2. 로그인 또는 익명으로 참여
 3. 채팅 시작!
 
@@ -163,7 +163,7 @@ npm run dev
    ifconfig
    ```
 
-2. 다른 기기에서 `http://YOUR_IP:3002` 접속
+2. 다른 기기에서 `http://YOUR_IP:4001` 접속
 
 ## 📁 프로젝트 구조
 
@@ -278,7 +278,7 @@ Socket.io 서버를 위한 전용 호스팅:
 
 ```typescript
 const serverUrl = typeof window !== 'undefined'
-  ? `${window.location.protocol}//${window.location.hostname}:3002`
+  ? `${window.location.protocol}//${window.location.hostname}:4001`
   : 'https://your-deployed-server.com'  // 배포된 서버 URL로 변경
 ```
 
@@ -325,7 +325,7 @@ node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 
 ```powershell
 # 관리자 권한 PowerShell
-netsh advfirewall firewall add rule name="Next.js Dev Server" dir=in action=allow protocol=TCP localport=3002
+netsh advfirewall firewall add rule name="Next.js Dev Server" dir=in action=allow protocol=TCP localport=4001
 netsh advfirewall firewall add rule name="Socket.io Server" dir=in action=allow protocol=TCP localport=4001
 ```
 
