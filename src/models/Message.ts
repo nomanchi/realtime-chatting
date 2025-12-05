@@ -5,6 +5,7 @@ export interface IMessage extends Document {
   content: string
   senderId: mongoose.Types.ObjectId
   senderName: string
+  chatRoom: mongoose.Types.ObjectId
   imageData?: string
   timestamp: number
   status: 'sent' | 'delivered' | 'read'
@@ -27,6 +28,11 @@ const MessageSchema = new Schema<IMessage>(
     senderName: {
       type: String,
       required: [true, '발신자 이름이 필요합니다.']
+    },
+    chatRoom: {
+      type: Schema.Types.ObjectId,
+      ref: 'ChatRoom',
+      required: [true, '채팅방 ID가 필요합니다.']
     },
     imageData: {
       type: String,
@@ -51,6 +57,7 @@ const MessageSchema = new Schema<IMessage>(
 // 인덱스 생성 (조회 성능 향상)
 MessageSchema.index({ timestamp: -1 })
 MessageSchema.index({ senderId: 1 })
+MessageSchema.index({ chatRoom: 1, timestamp: -1 }) // 채팅방별 메시지 조회
 
 // 모델이 이미 존재하면 재사용, 없으면 새로 생성
 const Message: Model<IMessage> =

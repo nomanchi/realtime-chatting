@@ -98,6 +98,55 @@ async function startServer(currentPort: number) {
   io.on('connection', (socket: AuthenticatedSocket) => {
     console.log('User connected:', socket.id)
 
+    // 친구 요청 브로드캐스트
+    socket.on('friend:request', (data: { recipientId: string }) => {
+      console.log('👥 친구 요청 이벤트:', data.recipientId)
+      io.sockets.sockets.forEach((s: AuthenticatedSocket) => {
+        if (s.userId === data.recipientId) {
+          s.emit('friend:request:received')
+        }
+      })
+    })
+
+    // 친구 수락 브로드캐스트
+    socket.on('friend:accept', (data: { requesterId: string }) => {
+      console.log('✅ 친구 수락 이벤트:', data.requesterId)
+      io.sockets.sockets.forEach((s: AuthenticatedSocket) => {
+        if (s.userId === data.requesterId) {
+          s.emit('friend:accepted')
+        }
+      })
+    })
+
+    // 새 메시지 브로드캐스트
+    socket.on('message:new', (data: { roomId: string, memberIds: string[] }) => {
+      console.log('📨 새 메시지 이벤트:', data.roomId)
+      data.memberIds.forEach((memberId) => {
+        if (memberId !== socket.userId) {
+          io.sockets.sockets.forEach((s: AuthenticatedSocket) => {
+            if (s.userId === memberId) {
+              s.emit('message:new', { roomId: data.roomId })
+            }
+          })
+        }
+      })
+    })
+
+    // 메시지 읽음 처리 브로드캐스트
+    socket.on('message:read', (data: { roomId: string, memberIds: string[] }) => {
+      console.log('📖 메시지 읽음 이벤트:', data.roomId)
+      data.memberIds.forEach((memberId) => {
+        if (memberId !== socket.userId) {
+          io.sockets.sockets.forEach((s: AuthenticatedSocket) => {
+            if (s.userId === memberId) {
+              s.emit('message:read:updated', { roomId: data.roomId })
+              console.log(`📖 읽음 처리 알림 전송: ${memberId}`)
+            }
+          })
+        }
+      })
+    })
+
     // Handle user join
     socket.on('user:join', async (userName: string) => {
       const user: User = {

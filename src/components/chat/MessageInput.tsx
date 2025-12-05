@@ -1,32 +1,61 @@
 'use client'
 
 import { useState, KeyboardEvent, useRef } from 'react'
-import { useChatStore } from '@/store/chat-store'
-import { socketManager } from '@/lib/socket'
+import { useAuthStore } from '@/store/auth-store'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Send, Plus, Smile } from 'lucide-react'
 import { EmojiPickerSheet } from './EmojiPickerSheet'
 import { AttachmentMenuSheet } from './AttachmentMenuSheet'
 
-export function MessageInput() {
+interface MessageInputProps {
+  roomId?: string
+  onMessageSent?: () => void
+}
+
+export function MessageInput({ roomId, onMessageSent }: MessageInputProps) {
   const [message, setMessage] = useState('')
   const [emojiOpen, setEmojiOpen] = useState(false)
   const [attachmentMenuOpen, setAttachmentMenuOpen] = useState(false)
-  const { currentUser } = useChatStore()
+  const { token, user } = useAuthStore()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const handleSend = () => {
-    if (!message.trim() || !currentUser) return
+  const handleSend = async () => {
+    if (!message.trim() || !user || !roomId || !token) return
 
-    socketManager.sendMessage({
-      senderId: currentUser.id,
-      senderName: currentUser.name,
-      content: message.trim(),
-      status: 'sent'
-    })
+    try {
+      const response = await fetch(`/api/chatrooms/${roomId}/messages`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          content: message.trim()
+        })
+      })
 
-    setMessage('')
+      if (response.ok) {
+        const data = await response.json()
+        setMessage('')
+        onMessageSent?.()
+
+        // Socket.IO로 실시간 알림
+        console.log('📨 메시지 전송 완료, Socket.IO 알림 준비:', data)
+        const { socketManager } = require('@/lib/socket')
+        if (data.roomId && data.memberIds) {
+          socketManager.emit('message:new', {
+            roomId: data.roomId,
+            memberIds: data.memberIds
+          })
+          console.log('✅ Socket.IO 알림 전송 완료')
+        } else {
+          console.warn('⚠️ roomId 또는 memberIds 누락:', data)
+        }
+      }
+    } catch (error) {
+      console.error('메시지 전송 오류:', error)
+    }
   }
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -40,9 +69,9 @@ export function MessageInput() {
     setMessage(prev => prev + emoji)
   }
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (!file || !currentUser) return
+    if (!file || !user || !roomId || !token) return
 
     // Check if it's an image
     if (!file.type.startsWith('image/')) {
@@ -58,18 +87,29 @@ export function MessageInput() {
 
     // Convert to base64
     const reader = new FileReader()
-    reader.onload = () => {
+    reader.onload = async () => {
       const base64 = reader.result as string
 
-      socketManager.sendMessage({
-        senderId: currentUser.id,
-        senderName: currentUser.name,
-        content: message.trim() || '이미지',
-        imageData: base64,
-        status: 'sent'
-      })
+      try {
+        const response = await fetch(`/api/chatrooms/${roomId}/messages`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            content: message.trim() || '이미지',
+            imageData: base64
+          })
+        })
 
-      setMessage('')
+        if (response.ok) {
+          setMessage('')
+          onMessageSent?.()
+        }
+      } catch (error) {
+        console.error('이미지 전송 오류:', error)
+      }
     }
     reader.readAsDataURL(file)
 

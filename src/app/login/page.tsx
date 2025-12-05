@@ -27,7 +27,7 @@ export default function LoginPage() {
     try {
       const response = await login(formData)
       setAuth(response.user, response.token)
-      router.push('/browser')
+      router.push('/friends')
     } catch (err: any) {
       setError(err.message || '로그인에 실패했습니다.')
     } finally {

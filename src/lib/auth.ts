@@ -1,21 +1,21 @@
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyToken, JWTPayload } from './jwt'
 
 /**
- * 요청에서 인증 토큰 추출
+ * 요청에서 인증 토큰 추출 (쿠키 우선)
  */
 export function getTokenFromRequest(req: NextRequest): string | null {
-  // Authorization 헤더에서 토큰 추출
-  const authHeader = req.headers.get('authorization')
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    return authHeader.substring(7)
-  }
-
-  // 쿠키에서 토큰 추출
+  // 1순위: 쿠키에서 토큰 추출
   const token = req.cookies.get('token')?.value
   if (token) {
     return token
+  }
+
+  // 2순위: Authorization 헤더에서 토큰 추출 (하위 호환성)
+  const authHeader = req.headers.get('authorization')
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    return authHeader.substring(7)
   }
 
   return null
@@ -60,4 +60,3 @@ export async function requireAuth(req: NextRequest): Promise<JWTPayload> {
 
   return user
 }
-

@@ -7,6 +7,11 @@ export interface IUser extends Document {
   password: string
   username: string
   avatar?: string
+  chatRooms: Array<{
+    roomId: mongoose.Types.ObjectId
+    customName?: string
+    lastReadMessageId?: mongoose.Types.ObjectId
+  }>
   createdAt: Date
   updatedAt: Date
   comparePassword(candidatePassword: string): Promise<boolean>
@@ -39,6 +44,24 @@ const UserSchema = new Schema<IUser>(
     avatar: {
       type: String,
       default: ''
+    },
+    chatRooms: {
+      type: [{
+        roomId: {
+          type: Schema.Types.ObjectId,
+          ref: 'ChatRoom',
+          required: true
+        },
+        customName: {
+          type: String,
+          trim: true
+        },
+        lastReadMessageId: {
+          type: Schema.Types.ObjectId,
+          ref: 'Message'
+        }
+      }],
+      default: []
     }
   },
   {
