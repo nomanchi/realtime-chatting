@@ -101,6 +101,64 @@ class SocketManager {
     }
   }
 
+  // 친구 요청 받기 이벤트
+  onFriendRequest(handler: () => void) {
+    if (this.socket) {
+      this.socket.on('friend:request:received', handler)
+    }
+    return () => {
+      if (this.socket) {
+        this.socket.off('friend:request:received', handler)
+      }
+    }
+  }
+
+  // 친구 수락 이벤트
+  onFriendAccepted(handler: () => void) {
+    if (this.socket) {
+      this.socket.on('friend:accepted', handler)
+    }
+    return () => {
+      if (this.socket) {
+        this.socket.off('friend:accepted', handler)
+      }
+    }
+  }
+
+  // 새 메시지 알림 이벤트
+  onNewMessage(handler: (data: { roomId: string }) => void) {
+    if (this.socket) {
+      this.socket.on('message:new', handler)
+    }
+    return () => {
+      if (this.socket) {
+        this.socket.off('message:new', handler)
+      }
+    }
+  }
+
+  // 메시지 읽음 처리 이벤트
+  onMessageRead(handler: (data: { roomId: string }) => void) {
+    if (this.socket) {
+      this.socket.on('message:read:updated', handler)
+    }
+    return () => {
+      if (this.socket) {
+        this.socket.off('message:read:updated', handler)
+      }
+    }
+  }
+
+  // Socket.IO 이벤트 emit (공개 메서드)
+  emit(event: string, data: any) {
+    if (this.socket?.connected) {
+      console.log(`🔵 Socket.IO emit: ${event}`, data)
+      this.socket.emit(event, data)
+    } else {
+      console.warn('⚠️ Socket.IO not connected, cannot emit:', event)
+    }
+  }
+
   private notifyMessage(message: Message) {
     this.messageHandlers.forEach(handler => handler(message))
   }
