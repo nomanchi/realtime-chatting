@@ -6,8 +6,9 @@ import { useAuthStore } from '@/store/auth-store'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Avatar } from '@/components/ui/avatar'
-import { ArrowLeft, Edit2, Check, X } from 'lucide-react'
+import { ArrowLeft, Edit2, Check, X, UserPlus } from 'lucide-react'
 import { MessageInput } from '@/components/chat/MessageInput'
+import { useToast } from '@/components/ui/toast'
 
 interface ChatRoomData {
   _id: string
@@ -49,6 +50,11 @@ export default function ChatRoomPage({ params }: { params: Promise<{ id: string 
   const [loading, setLoading] = useState(true)
   const [isEditingName, setIsEditingName] = useState(false)
   const [editedName, setEditedName] = useState('')
+  const [showInviteModal, setShowInviteModal] = useState(false)
+  const [friends, setFriends] = useState<any[]>([])
+  const [selectedFriends, setSelectedFriends] = useState<Set<string>>(new Set())
+  const [inviting, setInviting] = useState(false)
+  const { showToast } = useToast()
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // params 로딩
@@ -142,6 +148,53 @@ export default function ChatRoomPage({ params }: { params: Promise<{ id: string 
     console.log('🔌 채팅 페이지 Socket.IO 연결 시작')
     socketManager.connect('User', token)
 
+    // 새 메시지 수신 이벤트 리스닝
+    const unsubscribeNewMessage = socketManager.onNewMessage((data: { roomId: string }) => {
+      if (data.roomId === roomId) {
+        console.log('📨 새 메시지 수신, 목록 재조회')
+        // 메시지 목록 재조회
+        const fetchMessagesAgain = async () => {
+          try {
+            const response = await fetch(`/api/chatrooms/${roomId}/messages`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            })
+            if (response.ok) {
+              const data = await response.json()
+              setMessages(data.messages)
+
+              // 자동 읽음 처리: 마지막 메시지 ID로 업데이트
+              if (data.messages.length > 0) {
+                const lastMessageId = data.messages[data.messages.length - 1]._id
+                const readResponse = await fetch(`/api/chatrooms/${roomId}/read`, {
+                  method: 'PATCH',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                  },
+                  body: JSON.stringify({ messageId: lastMessageId })
+                })
+
+                // Socket.IO로 읽음 처리 알림
+                if (readResponse.ok) {
+                  const readData = await readResponse.json()
+                  if (readData.roomId && readData.memberIds) {
+                    socketManager.emit('message:read', {
+                      roomId: readData.roomId,
+                      memberIds: readData.memberIds
+                    })
+                    console.log('✅ 읽음 처리 Socket.IO 알림 전송')
+                  }
+                }
+              }
+            }
+          } catch (error) {
+            console.error('메시지 재조회 오류:', error)
+          }
+        }
+        fetchMessagesAgain()
+      }
+    })
+
     // 읽음 처리 이벤트 리스닝
     const unsubscribeRead = socketManager.onMessageRead((data: { roomId: string }) => {
       if (data.roomId === roomId) {
@@ -167,14 +220,21 @@ export default function ChatRoomPage({ params }: { params: Promise<{ id: string 
     // 정리: 이벤트 리스너만 제거, 연결은 유지
     return () => {
       console.log('🔌 채팅 페이지 Socket.IO 이벤트 리스너 정리')
+      unsubscribeNewMessage()
       unsubscribeRead()
     }
   }, [token, roomId])
 
   // 메시지 스크롤
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+    // 메시지가 로드되면 즉시 하단으로 스크롤
+    if (messagesEndRef.current) {
+      // 초기 로딩일 때는 즉시 스크롤, 이후에는 부드럽게
+      messagesEndRef.current.scrollIntoView({
+        behavior: loading ? 'auto' : 'smooth'
+      })
+    }
+  }, [messages, loading])
 
   // 채팅방 이름 가져오기
   const getRoomName = () => {
@@ -193,6 +253,68 @@ export default function ChatRoomPage({ params }: { params: Promise<{ id: string 
       .filter(m => m._id !== user?.id)
       .map(m => m.username)
       .join(', ')
+  }
+
+  // 친구 초대 모달 열기
+  const handleOpenInviteModal = async () => {
+    try {
+      // 친구 목록 조회
+      const response = await fetch('/api/friends', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        // 이미 채팅방에 있는 친구 제외
+        const memberIds = chatRoom?.members.map(m => m._id) || []
+        const availableFriends = data.friends.filter(
+          (f: any) => !memberIds.includes(f.id)
+        )
+        setFriends(availableFriends)
+        setShowInviteModal(true)
+      }
+    } catch (error) {
+      console.error('친구 목록 조회 오류:', error)
+    }
+  }
+
+  // 친구 초대
+  const handleInviteFriends = async () => {
+    if (selectedFriends.size === 0) return
+
+    setInviting(true)
+
+    try {
+      const response = await fetch(`/api/chatrooms/${roomId}/members`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          memberIds: Array.from(selectedFriends)
+        })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        // 채팅방 정보 업데이트
+        setChatRoom(data.chatRoom)
+        setShowInviteModal(false)
+        setSelectedFriends(new Set())
+        showToast('친구를 초대했습니다.', 'success')
+      } else {
+        const error = await response.json()
+        showToast(error.error || '친구 초대에 실패했습니다.', 'error')
+      }
+    } catch (error) {
+      console.error('친구 초대 오류:', error)
+      showToast('친구 초대 중 오류가 발생했습니다.', 'error')
+    } finally {
+      setInviting(false)
+    }
   }
 
   // 채팅방 이름 수정
@@ -265,6 +387,14 @@ export default function ChatRoomPage({ params }: { params: Promise<{ id: string 
             <h1 className="flex-1 text-lg font-semibold truncate">
               {getRoomName()}
             </h1>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleOpenInviteModal}
+              title="친구 초대"
+            >
+              <UserPlus className="h-4 w-4" />
+            </Button>
             {chatRoom?.type === 'group' && (
               <Button
                 variant="ghost"
@@ -298,6 +428,7 @@ export default function ChatRoomPage({ params }: { params: Promise<{ id: string 
               >
                 {!isOwnMessage && (
                   <Avatar
+                    src={message.senderId.avatar}
                     fallback={message.senderId.username[0]}
                     className="h-8 w-8"
                   />
@@ -362,6 +493,91 @@ export default function ChatRoomPage({ params }: { params: Promise<{ id: string 
           }
         }}
       />
+
+      {/* Invite Friends Modal */}
+      {showInviteModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowInviteModal(false)}>
+          <div className="bg-background rounded-lg shadow-lg max-w-md w-full mx-4 max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b p-4">
+              <h2 className="text-lg font-semibold">친구 초대</h2>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowInviteModal(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {/* Friend List */}
+            <div className="flex-1 overflow-y-auto">
+              {friends.length === 0 ? (
+                <div className="flex items-center justify-center h-40">
+                  <p className="text-muted-foreground">초대 가능한 친구가 없습니다</p>
+                </div>
+              ) : (
+                <div className="divide-y">
+                  {friends.map((friend) => {
+                    const isSelected = selectedFriends.has(friend.id)
+
+                    return (
+                      <button
+                        key={friend.id}
+                        onClick={() => {
+                          const newSelection = new Set(selectedFriends)
+                          if (newSelection.has(friend.id)) {
+                            newSelection.delete(friend.id)
+                          } else {
+                            newSelection.add(friend.id)
+                          }
+                          setSelectedFriends(newSelection)
+                        }}
+                        className={`w-full flex items-center gap-3 p-4 hover:bg-muted transition-colors ${
+                          isSelected ? 'bg-muted' : ''
+                        }`}
+                      >
+                        <div className="relative">
+                          <Avatar
+                            src={friend.avatar}
+                            fallback={friend.username[0]}
+                            className="h-10 w-10"
+                          />
+                          {isSelected && (
+                            <div className="absolute -bottom-1 -right-1 bg-primary rounded-full p-1">
+                              <Check className="h-3 w-3 text-primary-foreground" />
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex-1 text-left">
+                          <p className="font-medium">{friend.username}</p>
+                          <p className="text-sm text-muted-foreground truncate">
+                            {friend.email}
+                          </p>
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            {selectedFriends.size > 0 && (
+              <div className="border-t p-4">
+                <Button
+                  onClick={handleInviteFriends}
+                  disabled={inviting}
+                  className="w-full"
+                >
+                  {inviting ? '초대 중...' : `${selectedFriends.size}명 초대하기`}
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -1,5 +1,6 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
+import { User } from "lucide-react"
 
 interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
   src?: string
@@ -18,10 +19,10 @@ const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
       {...props}
     >
       {src ? (
-        <img src={src} alt={alt} className="aspect-square h-full w-full" />
+        <img src={src} alt={alt} className="aspect-square h-full w-full object-cover" />
       ) : (
         <div className="flex h-full w-full items-center justify-center bg-muted">
-          <span className="text-sm font-medium">{fallback || '?'}</span>
+          <User className="h-1/2 w-1/2 text-muted-foreground" />
         </div>
       )}
     </div>

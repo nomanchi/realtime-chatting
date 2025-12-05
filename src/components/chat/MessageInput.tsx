@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Send, Plus, Smile } from 'lucide-react'
 import { EmojiPickerSheet } from './EmojiPickerSheet'
 import { AttachmentMenuSheet } from './AttachmentMenuSheet'
+import { useToast } from '@/components/ui/toast'
 
 interface MessageInputProps {
   roomId?: string
@@ -18,6 +19,7 @@ export function MessageInput({ roomId, onMessageSent }: MessageInputProps) {
   const [emojiOpen, setEmojiOpen] = useState(false)
   const [attachmentMenuOpen, setAttachmentMenuOpen] = useState(false)
   const { token, user } = useAuthStore()
+  const { showToast } = useToast()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleSend = async () => {
@@ -75,13 +77,13 @@ export function MessageInput({ roomId, onMessageSent }: MessageInputProps) {
 
     // Check if it's an image
     if (!file.type.startsWith('image/')) {
-      alert('이미지 파일만 선택할 수 있습니다.')
+      showToast('이미지 파일만 선택할 수 있습니다.', 'error')
       return
     }
 
     // Check file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      alert('이미지 크기는 5MB 이하여야 합니다.')
+      showToast('이미지 크기는 5MB 이하여야 합니다.', 'error')
       return
     }
 

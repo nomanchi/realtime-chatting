@@ -6,6 +6,7 @@ export interface IUser extends Document {
   email: string
   password: string
   username: string
+  statusMessage?: string
   avatar?: string
   chatRooms: Array<{
     roomId: mongoose.Types.ObjectId
@@ -40,6 +41,12 @@ const UserSchema = new Schema<IUser>(
       trim: true,
       minlength: [2, '사용자명은 최소 2자 이상이어야 합니다.'],
       maxlength: [30, '사용자명은 최대 30자까지 가능합니다.']
+    },
+    statusMessage: {
+      type: String,
+      default: '',
+      trim: true,
+      maxlength: [100, '상태 메시지는 최대 100자까지 가능합니다.']
     },
     avatar: {
       type: String,

@@ -1,7 +1,7 @@
 'use client'
 
 import { usePathname, useRouter } from 'next/navigation'
-import { Users, MessageCircle } from 'lucide-react'
+import { Users, MessageCircle, Settings } from 'lucide-react'
 
 export function BottomNav() {
   const pathname = usePathname()
@@ -17,6 +17,11 @@ export function BottomNav() {
       name: '채팅',
       icon: MessageCircle,
       path: '/chatrooms'
+    },
+    {
+      name: '설정',
+      icon: Settings,
+      path: '/settings'
     }
   ]
 
@@ -38,7 +43,6 @@ export function BottomNav() {
               }`}
             >
               <Icon className="h-6 w-6" />
-              <span className="text-xs font-medium">{item.name}</span>
             </button>
           )
         })}

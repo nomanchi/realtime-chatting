@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Avatar } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { MessageCircle, Plus, Users } from 'lucide-react'
+import { MessageCircle, MessageCirclePlus, Users } from 'lucide-react'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import 'dayjs/locale/ko'
@@ -69,7 +69,7 @@ export default function ChatRoomsPage() {
     }
   }, [token])
 
-  // 인증 체크 (hydration 완료 후에만)
+  // 인증 체크 및 데이터 로딩 (hydration 완료 후에만)
   useEffect(() => {
     if (!isHydrated) return
 
@@ -82,7 +82,7 @@ export default function ChatRoomsPage() {
 
   // Socket.IO 실시간 연결
   useEffect(() => {
-    if (!token) return
+    if (!token || !isHydrated) return
 
     const { socketManager } = require('@/lib/socket')
 
@@ -104,13 +104,7 @@ export default function ChatRoomsPage() {
     return () => {
       unsubscribe()
     }
-  }, [token])
-
-
-
-  useEffect(() => {
-    fetchChatRooms()
-  }, [])
+  }, [token, isHydrated])
 
   // 롱프레스 시작
   const handleLongPressStart = (roomId: string, currentName: string) => {
@@ -210,10 +204,6 @@ export default function ChatRoomsPage() {
             {chatRooms.length}개의 채팅방
           </p>
         </div>
-        <Button onClick={() => router.push('/friends')}>
-          <Plus className="h-4 w-4 mr-2" />
-          새 채팅
-        </Button>
       </div>
 
       {/* Chat Room List */}
@@ -262,9 +252,9 @@ export default function ChatRoomsPage() {
                         <Users className="h-3 w-3 text-primary-foreground" />
                       </div>
                     )}
-                    {room.unreadCount && room.unreadCount > 0 && (
+                    {(room.unreadCount ?? 0) > 0 && (
                       <div className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full min-w-[20px] h-5 flex items-center justify-center text-xs font-bold px-1">
-                        {room.unreadCount > 99 ? '99+' : room.unreadCount}
+                        {room.unreadCount! > 99 ? '99+' : room.unreadCount}
                       </div>
                     )}
                   </div>
@@ -335,6 +325,15 @@ export default function ChatRoomsPage() {
           </div>
         )}
       </div>
+
+      {/* Floating Action Button */}
+      <Button
+        onClick={() => router.push('/chatrooms/new')}
+        className="fixed bottom-20 right-6 h-14 w-14 rounded-full shadow-lg"
+        size="icon"
+      >
+        <MessageCirclePlus className="h-6 w-6" />
+      </Button>
 
       <BottomNav />
     </div>
