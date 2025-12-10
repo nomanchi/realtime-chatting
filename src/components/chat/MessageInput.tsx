@@ -1,7 +1,6 @@
-'use client'
-
 import { useState, KeyboardEvent, useRef } from 'react'
 import { useAuthStore } from '@/store/auth-store'
+import { useThemeStore } from '@/store/theme-store'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Send, Plus, Smile } from 'lucide-react'
@@ -19,6 +18,7 @@ export function MessageInput({ roomId, onMessageSent }: MessageInputProps) {
   const [emojiOpen, setEmojiOpen] = useState(false)
   const [attachmentMenuOpen, setAttachmentMenuOpen] = useState(false)
   const { token, user } = useAuthStore()
+  const { themeColor } = useThemeStore()
   const { showToast } = useToast()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -61,6 +61,8 @@ export function MessageInput({ roomId, onMessageSent }: MessageInputProps) {
   }
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.nativeEvent.isComposing) return
+
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       handleSend()
@@ -121,9 +123,17 @@ export function MessageInput({ roomId, onMessageSent }: MessageInputProps) {
     }
   }
 
+  const colorClasses = {
+    blue: 'bg-blue-200/30',
+    purple: 'bg-purple-200/30',
+    green: 'bg-green-200/30',
+    orange: 'bg-orange-200/30',
+    pink: 'bg-pink-200/30'
+  }
+
   return (
     <>
-      <div className="flex items-center gap-2 p-4 border-t bg-background">
+      <div className={`flex items-center gap-3 p-4 ${colorClasses[themeColor]} backdrop-blur-sm`}>
         <input
           ref={fileInputRef}
           type="file"
@@ -137,7 +147,7 @@ export function MessageInput({ roomId, onMessageSent }: MessageInputProps) {
           onClick={() => setAttachmentMenuOpen(true)}
           variant="ghost"
           size="icon"
-          className="shrink-0"
+          className="shrink-0 h-10 w-10 rounded-2xl hover:bg-primary/10"
           title="첨부하기"
         >
           <Plus className="h-5 w-5" />
@@ -149,7 +159,7 @@ export function MessageInput({ roomId, onMessageSent }: MessageInputProps) {
           onChange={(e) => setMessage(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="메시지를 입력하세요..."
-          className="flex-1"
+          className="flex-1 h-10 rounded-2xl bg-muted/50 border-0 focus-visible:ring-2 focus-visible:ring-primary/50 placeholder:text-muted-foreground/60 shadow-sm"
         />
 
         {/* Emoji Button */}
@@ -157,7 +167,7 @@ export function MessageInput({ roomId, onMessageSent }: MessageInputProps) {
           onClick={() => setEmojiOpen(!emojiOpen)}
           variant="ghost"
           size="icon"
-          className="shrink-0"
+          className="shrink-0 h-10 w-10 rounded-2xl hover:bg-primary/10"
           title="이모티콘"
         >
           <Smile className="h-5 w-5" />
@@ -168,7 +178,7 @@ export function MessageInput({ roomId, onMessageSent }: MessageInputProps) {
           onClick={handleSend}
           disabled={!message.trim()}
           size="icon"
-          className="shrink-0"
+          className="shrink-0 h-10 w-10 rounded-2xl bg-gradient-to-br from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-md disabled:opacity-50"
         >
           <Send className="h-4 w-4" />
         </Button>

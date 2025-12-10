@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
         { requester: authUser.userId, status },
         { recipient: authUser.userId, status }
       ]
-    }).populate('requester recipient', 'username email avatar')
+    }).populate('requester recipient', 'username email avatar statusMessage')
 
     // 친구 목록 생성
     const friends = friendships.map((friendship: any) => {
@@ -34,6 +34,7 @@ export async function GET(req: NextRequest) {
         username: friend.username,
         email: friend.email,
         avatar: friend.avatar,
+        statusMessage: friend.statusMessage,
         friendshipId: friendship._id,
         friendshipStatus: friendship.status,
         isRequester: isRequester,

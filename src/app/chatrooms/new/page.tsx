@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/auth-store'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Avatar } from '@/components/ui/avatar'
 import { ArrowLeft, Check, Users } from 'lucide-react'
 import { useToast } from '@/components/ui/toast'
@@ -20,6 +21,7 @@ export default function NewChatPage() {
   const { token } = useAuthStore()
   const [friends, setFriends] = useState<Friend[]>([])
   const [selectedFriends, setSelectedFriends] = useState<Set<string>>(new Set())
+  const [groupName, setGroupName] = useState('')
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
   const { showToast } = useToast()
@@ -77,7 +79,11 @@ export default function NewChatPage() {
       // 2명 이상 선택: 그룹 채팅
       const requestBody = selectedIds.length === 1
         ? { type: 'direct', memberId: selectedIds[0] }
-        : { type: 'group', memberIds: selectedIds }
+        : {
+            type: 'group',
+            memberIds: selectedIds,
+            name: groupName.trim() || undefined
+          }
 
       const response = await fetch('/api/chatrooms', {
         method: 'POST',
@@ -115,7 +121,7 @@ export default function NewChatPage() {
   return (
     <div className="flex flex-col h-screen bg-background">
       {/* Header */}
-      <div className="flex items-center gap-3 border-b p-4">
+      <div className="flex items-center gap-3 p-4 pb-3">
         <Button
           variant="ghost"
           size="icon"
@@ -186,9 +192,24 @@ export default function NewChatPage() {
         )}
       </div>
 
-      {/* Bottom Action Button */}
+      {/* Bottom Action Area */}
       {selectedFriends.size > 0 && (
-        <div className="border-t p-4">
+        <div className="pt-4 p-4 space-y-3">
+          {/* 그룹 이름 입력 (2명 이상 선택 시) */}
+          {selectedFriends.size >= 2 && (
+            <div>
+              <label className="text-sm font-medium text-muted-foreground mb-1 block">
+                그룹 이름 (선택사항)
+              </label>
+              <Input
+                value={groupName}
+                onChange={(e) => setGroupName(e.target.value)}
+                placeholder="참여자 이름으로 자동 설정됩니다"
+                className="w-full"
+              />
+            </div>
+          )}
+
           <Button
             onClick={handleCreateChat}
             disabled={creating}

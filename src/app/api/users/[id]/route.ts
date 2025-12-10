@@ -8,7 +8,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key'
 // GET /api/users/:id - 특정 사용자 프로필 조회
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const authHeader = req.headers.get('authorization')
@@ -21,7 +21,8 @@ export async function GET(
 
     await connectDB()
 
-    const user = await User.findById(params.id).select('-password')
+    const { id } = await params
+    const user = await User.findById(id).select('-password')
     if (!user) {
       return NextResponse.json({ error: '사용자를 찾을 수 없습니다' }, { status: 404 })
     }

@@ -37,8 +37,6 @@ export async function GET(req: NextRequest) {
 
     // 각 채팅방에 customName과 unreadCount 추가
     const chatRoomsWithDetails = await Promise.all(chatRooms.map(async (room: any) => {
-      const roomObj = room.toObject()
-
       // User.chatRooms에서 customName과 lastReadMessageId 찾기
       const userChatRoom = user.chatRooms.find(
         (cr: any) => cr.roomId.toString() === room._id.toString()
@@ -62,30 +60,55 @@ export async function GET(req: NextRequest) {
         })
       }
 
-      // 1:1 채팅인 경우 상대방 정보 추가
+      // 1:1 채팅인 경우 상대방 정보 추가 (toObject 전에 처리)
+      let otherMemberData = null
       if (room.type === 'direct') {
         const otherMemberId = room.getOtherMember(new mongoose.Types.ObjectId(authUser.userId))
         const otherMember = room.members.find(
           (m: any) => m._id.toString() === otherMemberId?.toString()
         )
 
-        return {
-          ...roomObj,
-          customName,
-          unreadCount,
-          otherMember: otherMember ? {
+        if (otherMember) {
+          otherMemberData = {
             id: otherMember._id,
             username: otherMember.username,
             email: otherMember.email,
             avatar: otherMember.avatar
-          } : null
+          }
+        }
+      }
+
+      // 그룹 채팅인 경우 마지막 메시지 보낸 사람의 아바타 추가
+      let lastMessageSenderAvatar = null
+      if (room.type === 'group') {
+        const lastMessage = await Message.findOne({
+          chatRoom: room._id
+        })
+          .sort({ createdAt: -1 })
+          .populate('senderId', 'avatar username')
+          .limit(1)
+
+        if (lastMessage && lastMessage.senderId) {
+          lastMessageSenderAvatar = (lastMessage.senderId as any).avatar
+        }
+      }
+
+      const roomObj = room.toObject()
+
+      if (room.type === 'direct') {
+        return {
+          ...roomObj,
+          customName,
+          unreadCount,
+          otherMember: otherMemberData
         }
       }
 
       return {
         ...roomObj,
         customName,
-        unreadCount
+        unreadCount,
+        lastMessageSenderAvatar
       }
     }))
 
@@ -146,6 +169,18 @@ export async function POST(req: NextRequest) {
       )
 
       if (existingRoom) {
+        // 사용자가 이전에 나간 채팅방일 수 있으므로 chatRooms에 다시 추가
+        await User.updateMany(
+          { _id: { $in: [authUser.userId, memberId] } },
+          {
+            $addToSet: {  // 중복 방지를 위해 addToSet 사용
+              chatRooms: {
+                roomId: existingRoom._id
+              }
+            }
+          }
+        )
+
         return NextResponse.json(
           {
             success: true,
@@ -169,10 +204,26 @@ export async function POST(req: NextRequest) {
       members = [authUser.userId, ...memberIds]
     }
 
+    // 그룹 채팅 이름 처리
+    let chatRoomName: string | undefined = undefined
+    if (type === 'group') {
+      if (name && name.trim()) {
+        // 사용자가 이름을 제공한 경우
+        chatRoomName = name.trim()
+      } else {
+        // 이름이 없으면 참여자 이름으로 자동 생성
+        const memberUsers = await User.find({
+          _id: { $in: members.map(id => new mongoose.Types.ObjectId(id)) }
+        }).select('username')
+
+        chatRoomName = memberUsers.map(u => u.username).join(', ')
+      }
+    }
+
     // 채팅방 생성
     const chatRoom = await ChatRoom.create({
       type,
-      name: type === 'group' ? name : undefined,
+      name: chatRoomName,
       members: members.map(id => new mongoose.Types.ObjectId(id)),
       createdBy: new mongoose.Types.ObjectId(authUser.userId)
     })

@@ -5,12 +5,13 @@ import { useRouter } from 'next/navigation'
 import { Avatar } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { MessageCircle, MessageCirclePlus, Users } from 'lucide-react'
+import { MessageCircle, MessageCirclePlus, Users, Trash2 } from 'lucide-react'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import 'dayjs/locale/ko'
 import { BottomNav } from '@/components/layout/BottomNav'
 import { useAuthStore } from '@/store/auth-store'
+import { useThemeStore } from '@/store/theme-store'
 
 dayjs.extend(relativeTime)
 dayjs.locale('ko')
@@ -24,6 +25,7 @@ interface ChatRoom {
   lastMessage?: string
   lastMessageAt?: string
   unreadCount?: number  // 읽지 않은 메시지 개수
+  lastMessageSenderAvatar?: string  // 그룹 채팅: 마지막 메시지 보낸 사람 아바타
   otherMember?: {
     id: string
     username: string
@@ -35,12 +37,14 @@ interface ChatRoom {
 export default function ChatRoomsPage() {
   const router = useRouter()
   const { token } = useAuthStore()
+  const { themeColor } = useThemeStore()
   const [chatRooms, setChatRooms] = useState<ChatRoom[]>([])
   const [loading, setLoading] = useState(true)
   const [isHydrated, setIsHydrated] = useState(false)
   const [editingRoomId, setEditingRoomId] = useState<string | null>(null)
   const [editedName, setEditedName] = useState('')
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null)
+  const [deleteDialog, setDeleteDialog] = useState<{ show: boolean; roomId: string | null }>({ show: false, roomId: null })
 
   // Hydration 체크
   useEffect(() => {
@@ -154,33 +158,76 @@ export default function ChatRoomsPage() {
     }
   }
 
+  // 채팅방 삭제
+  const handleDeleteChatRoom = async () => {
+    if (!deleteDialog.roomId) return
+
+    try {
+      const response = await fetch(`/api/chatrooms/${deleteDialog.roomId}/leave`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (response.ok) {
+        // 로컬 상태에서 제거
+        setChatRooms(prev => prev.filter(room => room._id !== deleteDialog.roomId))
+        setDeleteDialog({ show: false, roomId: null })
+      } else {
+        console.error('채팅방 나가기 실패')
+      }
+    } catch (error) {
+      console.error('채팅방 삭제 오류:', error)
+    }
+  }
+
   // 채팅방 이름 가져오기
   const getChatRoomName = (room: ChatRoom) => {
-    // 1순위: 사용자가 설정한 커스텀 이름
+    // 1순위: 사용자가 설정한 커스텀 이름 (모든 타입에 적용)
     if (room.customName) {
       return room.customName
     }
 
-    // 2순위: 커스텀 이름이 있으면 항상 우선
-    if (room.name) {
-      return room.name
-    }
-
-    // 1:1 채팅: 상대방 이름
+    // 2순위: 1:1 채팅은 상대방 이름
     if (room.type === 'direct' && room.otherMember) {
       return room.otherMember.username
     }
 
-    // 그룹 채팅: 기본값
+    // 3순위: 그룹 채팅의 공통 이름 (설정된 경우 또는 자동 생성된 경우)
+    if (room.name) {
+      return room.name
+    }
+
+    // 4순위: 기본값
     return '그룹 채팅'
   }
 
   // 채팅방 아바타 가져오기
   const getChatRoomAvatar = (room: ChatRoom) => {
+    // 1:1 채팅: 상대방 아바타
     if (room.type === 'direct' && room.otherMember) {
-      return room.otherMember.username[0]
+      return room.otherMember.avatar || room.otherMember.username[0]
     }
-    return '그'
+
+    // 그룹 채팅: 채팅방 이미지가 있으면 사용, 없으면 기본값
+    // TODO: 마지막 메시지 보낸 사람의 아바타를 사용하려면 API에서 해당 정보를 추가로 전달해야 함
+    return 'G'
+  }
+
+  // 채팅방 아바타 이미지 URL 가져오기
+  const getChatRoomAvatarSrc = (room: ChatRoom) => {
+    // 1:1 채팅: 상대방 아바타
+    if (room.type === 'direct' && room.otherMember?.avatar) {
+      return room.otherMember.avatar
+    }
+
+    // 그룹 채팅: 마지막 메시지 보낸 사람의 아바타
+    if (room.type === 'group' && room.lastMessageSenderAvatar) {
+      return room.lastMessageSenderAvatar
+    }
+
+    return undefined
   }
 
   // 시간 포맷팅
@@ -194,15 +241,20 @@ export default function ChatRoomsPage() {
     }
   }
 
+  const colorClasses = {
+    blue: 'bg-blue-200/30',
+    purple: 'bg-purple-200/30',
+    green: 'bg-green-200/30',
+    orange: 'bg-orange-200/30',
+    pink: 'bg-pink-200/30'
+  }
+
   return (
     <div className="flex flex-col h-screen bg-background">
       {/* Header */}
-      <div className="flex items-center justify-between border-b p-4">
+      <div className={`flex items-center justify-between p-4 pb-2 ${colorClasses[themeColor]} backdrop-blur-sm`}>
         <div>
-          <h1 className="text-2xl font-bold">채팅방</h1>
-          <p className="text-sm text-muted-foreground">
-            {chatRooms.length}개의 채팅방
-          </p>
+          <h1 className="text-2xl font-bold">채팅</h1>
         </div>
       </div>
 
@@ -226,7 +278,7 @@ export default function ChatRoomsPage() {
             </Button>
           </div>
         ) : (
-          <div className="divide-y">
+          <div className="space-y-1 px-2">
             {chatRooms.map((room) => (
               <div key={room._id} className="relative">
                 <button
@@ -240,10 +292,11 @@ export default function ChatRoomsPage() {
                   onMouseDown={() => handleLongPressStart(room._id, getChatRoomName(room))}
                   onMouseUp={handleLongPressEnd}
                   onMouseLeave={handleLongPressEnd}
-                  className="w-full flex items-center gap-3 p-4 hover:bg-muted transition-colors"
+                  className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors"
                 >
                   <div className="relative">
                     <Avatar
+                      src={getChatRoomAvatarSrc(room)}
                       fallback={getChatRoomAvatar(room)}
                       className="h-12 w-12"
                     />
@@ -260,63 +313,78 @@ export default function ChatRoomsPage() {
                   </div>
 
                   <div className="flex-1 text-left min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      {editingRoomId === room._id ? (
-                        <div className="flex items-center gap-2 flex-1" onClick={(e) => e.stopPropagation()}>
-                          <Input
-                            value={editedName}
-                            onChange={(e) => setEditedName(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') handleSaveName(room._id)
-                              if (e.key === 'Escape') setEditingRoomId(null)
-                            }}
-                            placeholder="채팅방 이름"
-                            className="h-8 text-sm"
-                            autoFocus
-                          />
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleSaveName(room._id)
-                            }}
-                          >
-                            저장
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              setEditingRoomId(null)
-                            }}
-                          >
-                            취소
-                          </Button>
+                    {editingRoomId === room._id ? (
+                      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                        <Input
+                          value={editedName}
+                          onChange={(e) => setEditedName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleSaveName(room._id)
+                            if (e.key === 'Escape') setEditingRoomId(null)
+                          }}
+                          placeholder="채팅방 이름"
+                          className="h-8 text-sm"
+                          autoFocus
+                        />
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleSaveName(room._id)
+                          }}
+                        >
+                          저장
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setEditingRoomId(null)
+                          }}
+                        >
+                          취소
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setDeleteDialog({ show: true, roomId: room._id })
+                            setEditingRoomId(null)
+                          }}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          삭제
+                        </Button>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <p className="font-medium truncate">
+                              {getChatRoomName(room)}
+                            </p>
+                            {room.type === 'group' && (
+                              <span className="text-xs text-muted-foreground shrink-0">
+                                {room.members.length}명
+                              </span>
+                            )}
+                          </div>
+                          {room.lastMessageAt && (
+                            <span className="text-xs text-muted-foreground shrink-0 ml-2">
+                              {formatTime(room.lastMessageAt)}
+                            </span>
+                          )}
                         </div>
-                      ) : (
-                        <p className="font-medium truncate">
-                          {getChatRoomName(room)}
-                        </p>
-                      )}
-                      {editingRoomId !== room._id && room.lastMessageAt && (
-                        <span className="text-xs text-muted-foreground shrink-0 ml-2">
-                          {formatTime(room.lastMessageAt)}
-                        </span>
-                      )}
-                    </div>
-
-                    {editingRoomId !== room._id && room.lastMessage && (
-                      <p className="text-sm text-muted-foreground truncate">
-                        {room.lastMessage}
-                      </p>
-                    )}
-
-                    {editingRoomId !== room._id && room.type === 'group' && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {room.members.length}명
-                      </p>
+                        {room.lastMessage && (
+                          <p className="text-sm text-muted-foreground truncate">
+                            {room.lastMessage}
+                          </p>
+                        )}
+                      </>
                     )}
                   </div>
                 </button>
@@ -334,6 +402,32 @@ export default function ChatRoomsPage() {
       >
         <MessageCirclePlus className="h-6 w-6" />
       </Button>
+
+      {/* Delete Confirmation Dialog */}
+      {deleteDialog.show && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setDeleteDialog({ show: false, roomId: null })}>
+          <div className="bg-background rounded-lg shadow-lg max-w-sm w-full mx-4 p-6" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold mb-2">채팅방 나가기</h3>
+            <p className="text-muted-foreground mb-6">
+              채팅방에서 나가시겠습니까? 나가면 이 채팅방의 메시지를 더 이상 볼 수 없습니다.
+            </p>
+            <div className="flex gap-2 justify-end">
+              <Button
+                variant="outline"
+                onClick={() => setDeleteDialog({ show: false, roomId: null })}
+              >
+                취소
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDeleteChatRoom}
+              >
+                나가기
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <BottomNav />
     </div>

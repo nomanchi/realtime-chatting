@@ -36,8 +36,38 @@ export async function GET(
       )
     }
 
+    // User에서 customName 가져오기
+    const User = (await import('@/models/User')).default
+    const user = await User.findById(authUser.userId)
+    const userChatRoom = user?.chatRooms?.find(
+      (cr: any) => cr.roomId.toString() === roomId
+    )
+    const customName = userChatRoom?.customName
+
+    // 1:1 채팅인 경우 상대방 정보 추가
+    let otherMember = null
+    if (chatRoom.type === 'direct') {
+      const otherMemberId = chatRoom.getOtherMember(authUser.userId)
+      otherMember = chatRoom.members.find(
+        (m: any) => m._id.toString() === otherMemberId?.toString()
+      )
+    }
+
+    const chatRoomObj = chatRoom.toObject()
+
     return NextResponse.json(
-      { chatRoom },
+      {
+        chatRoom: {
+          ...chatRoomObj,
+          customName,
+          otherMember: otherMember ? {
+            _id: otherMember._id,
+            username: otherMember.username,
+            email: otherMember.email,
+            avatar: otherMember.avatar
+          } : null
+        }
+      },
       { status: 200 }
     )
   } catch (error: any) {

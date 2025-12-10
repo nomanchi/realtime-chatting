@@ -1,7 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { useChatStore } from '@/store/chat-store'
+import { useAuthStore } from '@/store/auth-store'
 import { socketManager } from '@/lib/socket'
 import { ChatHeader } from '@/components/chat/ChatHeader'
 import { MessageList } from '@/components/chat/MessageList'
@@ -10,81 +12,52 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 
 export default function WebViewPage() {
+  const router = useRouter()
   const { setCurrentUser, setOnlineUsers, addMessage, setConnectionStatus } = useChatStore()
-  const [userName, setUserName] = useState('')
-  const [isJoined, setIsJoined] = useState(false)
+  const { isAuthenticated, user: authUser, token } = useAuthStore()
 
-  const handleJoin = () => {
-    if (!userName.trim()) return
-
-    const user = {
-      id: `user-${Date.now()}`,
-      name: userName,
-      isOnline: true
-    }
-    setCurrentUser(user)
-    setIsJoined(true)
-
-    // Connect to Socket.io server
-    socketManager.connect(userName)
-
-    // Listen for messages
-    const unsubscribeMessage = socketManager.onMessage((message) => {
-      addMessage(message)
-    })
-
-    // Listen for connection status
-    const unsubscribeStatus = socketManager.onStatus((status) => {
-      setConnectionStatus(status as any)
-    })
-
-    // Listen for online users
-    const unsubscribeUsers = socketManager.onUsers((users) => {
-      setOnlineUsers(users.map(u => ({
-        id: u.id,
-        name: u.name,
-        isOnline: true
-      })))
-    })
-  }
-
+  // 인증 체크 및 리다이렉트
   useEffect(() => {
-    return () => {
-      if (isJoined) {
-        socketManager.disconnect()
-      }
+    if (!isAuthenticated) {
+      router.push('/login')
+      return
     }
-  }, [isJoined])
 
-  if (!isJoined) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-background p-4">
-        <div className="w-full max-w-sm space-y-4">
-          <div className="text-center space-y-2">
-            <h1 className="text-2xl font-bold">채팅</h1>
-            <p className="text-sm text-muted-foreground">이름을 입력하세요</p>
-          </div>
+    if (authUser) {
+      const user = {
+        id: authUser.id,
+        name: authUser.username,
+        isOnline: true
+      }
+      setCurrentUser(user)
 
-          <div className="space-y-3">
-            <Input
-              placeholder="이름"
-              value={userName}
-              onChange={(e) => setUserName(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleJoin()}
-              className="h-12"
-              autoFocus
-            />
-            <Button
-              onClick={handleJoin}
-              className="w-full h-12"
-              disabled={!userName.trim()}
-            >
-              참여하기
-            </Button>
-          </div>
-        </div>
-      </div>
-    )
+      // Connect to Socket.io server with token
+      socketManager.connect(authUser.username, token || undefined)
+
+      // Listen for messages
+      socketManager.onMessage((message) => {
+        addMessage(message)
+      })
+
+      // Listen for connection status
+      socketManager.onStatus((status) => {
+        setConnectionStatus(status as any)
+      })
+
+      // Listen for online users
+      socketManager.onUsers((users) => {
+        setOnlineUsers(users.map(u => ({
+          id: u.id,
+          name: u.name,
+          isOnline: true
+        })))
+      })
+    }
+  }, [isAuthenticated, authUser, token, router, setCurrentUser, addMessage, setConnectionStatus, setOnlineUsers])
+
+  // 인증되지 않은 경우 아무것도 렌더링하지 않음 (리다이렉트 대기)
+  if (!isAuthenticated) {
+    return null
   }
 
   return (

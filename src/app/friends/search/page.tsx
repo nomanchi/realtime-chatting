@@ -100,7 +100,7 @@ export default function FriendSearchPage() {
   return (
     <div className="flex flex-col h-screen bg-background">
       {/* Header */}
-      <div className="flex items-center gap-3 border-b p-4">
+      <div className="flex items-center gap-3 p-4 pb-3">
         <Button
           variant="ghost"
           size="icon"
@@ -112,7 +112,7 @@ export default function FriendSearchPage() {
       </div>
 
       {/* Search Bar */}
-      <div className="p-4 border-b">
+      <div className="p-4 pb-3">
         <div className="flex gap-2">
           <Input
             placeholder="사용자명 또는 이메일 검색..."

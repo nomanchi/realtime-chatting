@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/auth-store'
+import { useThemeStore } from '@/store/theme-store'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Avatar } from '@/components/ui/avatar'
@@ -12,6 +13,7 @@ import { ArrowLeft, Save, Camera } from 'lucide-react'
 export default function ProfilePage() {
   const router = useRouter()
   const { token, user, setUser } = useAuthStore()
+  const { themeColor } = useThemeStore()
   const { showToast } = useToast()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isHydrated, setIsHydrated] = useState(false)
@@ -119,42 +121,61 @@ export default function ProfilePage() {
     )
   }
 
+  const colorClasses = {
+    blue: 'bg-blue-200/30',
+    purple: 'bg-purple-200/30',
+    green: 'bg-green-200/30',
+    orange: 'bg-orange-200/30',
+    pink: 'bg-pink-200/30'
+  }
+
   return (
-    <div className="flex flex-col h-screen bg-background">
+    <div className="flex flex-col h-screen bg-gradient-to-b from-background to-muted/20">
       {/* Header */}
-      <div className="flex items-center gap-3 border-b p-4">
+      <div className={`flex items-center justify-between p-4 ${colorClasses[themeColor]} backdrop-blur-sm`}>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => router.back()}
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="text-xl font-bold">프로필 편집</h1>
+        </div>
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => router.back()}
+          onClick={handleSave}
+          disabled={loading}
+          className="text-primary hover:text-primary/80"
         >
-          <ArrowLeft className="h-5 w-5" />
+          <Save className="h-5 w-5" />
         </Button>
-        <h1 className="text-2xl font-bold">프로필 편집</h1>
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-4">
         {/* Avatar Section */}
-        <div className="flex flex-col items-center mb-8">
+        <div className="flex flex-col items-center mb-6 p-8 bg-gradient-to-br from-primary/5 to-purple-500/5 rounded-2xl">
           <div
             onClick={handleAvatarClick}
-            className="relative group cursor-pointer"
+            className="relative group cursor-pointer mb-3"
           >
             {avatarPreview ? (
               <img
                 src={avatarPreview}
                 alt="Profile"
-                className="h-24 w-24 rounded-full object-cover border-2 border-border"
+                className="h-32 w-32 rounded-full object-cover ring-4 ring-primary/20 shadow-lg"
               />
             ) : (
               <Avatar
                 fallback={username[0]?.toUpperCase() || '?'}
-                className="h-24 w-24 text-4xl"
+                className="h-32 w-32 text-5xl ring-4 ring-primary/20 shadow-lg"
               />
             )}
-            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-              <Camera className="h-8 w-8 text-white" />
+            <div className="absolute inset-0 flex items-center justify-center bg-black/60 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200">
+              <Camera className="h-10 w-10 text-white" />
             </div>
           </div>
           <input
@@ -164,26 +185,23 @@ export default function ProfilePage() {
             onChange={handleAvatarChange}
             className="hidden"
           />
-          <p className="text-sm text-muted-foreground mt-2">프로필 사진 변경</p>
+          <p className="text-sm font-medium text-primary">프로필 사진 변경</p>
+          <p className="text-xs text-muted-foreground mt-1">2MB 이하의 이미지만 가능합니다</p>
         </div>
 
         {/* Form */}
-        <div className="space-y-6 max-w-md mx-auto">
+        <div className="space-y-4 max-w-md mx-auto">
           {/* Email (read-only) */}
-          <div>
-            <label className="block text-sm font-medium mb-2">
+          <div className="bg-background/60 backdrop-blur-sm rounded-xl p-4 shadow-sm">
+            <label className="block text-xs font-medium text-muted-foreground mb-2">
               이메일
             </label>
-            <Input
-              value={user.email}
-              disabled
-              className="bg-muted"
-            />
+            <p className="text-sm font-medium">{user.email}</p>
           </div>
 
           {/* Username */}
-          <div>
-            <label className="block text-sm font-medium mb-2">
+          <div className="bg-background/60 backdrop-blur-sm rounded-xl p-4 shadow-sm">
+            <label className="block text-xs font-medium text-muted-foreground mb-2">
               사용자명
             </label>
             <Input
@@ -191,15 +209,16 @@ export default function ProfilePage() {
               onChange={(e) => setUsername(e.target.value)}
               placeholder="사용자명을 입력하세요"
               maxLength={30}
+              className="border-0 bg-muted/50 focus-visible:ring-primary"
             />
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-xs text-muted-foreground mt-2">
               {username.length}/30
             </p>
           </div>
 
           {/* Status Message */}
-          <div>
-            <label className="block text-sm font-medium mb-2">
+          <div className="bg-background/60 backdrop-blur-sm rounded-xl p-4 shadow-sm">
+            <label className="block text-xs font-medium text-muted-foreground mb-2">
               상태 메시지
             </label>
             <Input
@@ -207,21 +226,12 @@ export default function ProfilePage() {
               onChange={(e) => setStatusMessage(e.target.value)}
               placeholder="상태 메시지를 입력하세요"
               maxLength={100}
+              className="border-0 bg-muted/50 focus-visible:ring-primary"
             />
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-xs text-muted-foreground mt-2">
               {statusMessage.length}/100
             </p>
           </div>
-
-          {/* Save Button */}
-          <Button
-            onClick={handleSave}
-            disabled={loading}
-            className="w-full flex items-center justify-center gap-2"
-          >
-            <Save className="h-5 w-5" />
-            {loading ? '저장 중...' : '저장'}
-          </Button>
         </div>
       </div>
     </div>

@@ -13,12 +13,46 @@ export function MessageList() {
   const { messages, currentUser } = useChatStore()
   const scrollRef = useRef<HTMLDivElement>(null)
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
+  const shouldAutoScrollRef = useRef(true)
+
+  const handleScroll = () => {
+    console.log('[MessageList] onScroll event fired!')
+    if (!scrollRef.current) return
+    const { scrollTop, scrollHeight, clientHeight } = scrollRef.current
+    const distanceFromBottom = scrollHeight - scrollTop - clientHeight
+    const isAtBottom = distanceFromBottom < 100
+    shouldAutoScrollRef.current = isAtBottom
+
+    console.log('[MessageList] Scroll State:', {
+      scrollTop,
+      scrollHeight,
+      clientHeight,
+      distanceFromBottom,
+      isAtBottom,
+      shouldAutoScroll: shouldAutoScrollRef.current
+    })
+  }
 
   useEffect(() => {
-    if (scrollRef.current) {
+    if (!scrollRef.current) return
+
+    const lastMessage = messages[messages.length - 1]
+    const isCurrentUserSender = lastMessage?.senderId === currentUser?.id
+
+    console.log('[MessageList] useEffect trigger', {
+      msgCount: messages.length,
+      lastSender: lastMessage?.senderId,
+      currentUser: currentUser?.id,
+      isCurrentUserSender,
+      shouldAutoScroll: shouldAutoScrollRef.current
+    })
+
+    // Scroll if user sent the message OR if they were already monitoring the bottom
+    if (messages.length > 0 && (isCurrentUserSender || shouldAutoScrollRef.current)) {
+      console.log('[MessageList] Scrolling to bottom...')
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight
     }
-  }, [messages])
+  }, [messages, currentUser])
 
   if (messages.length === 0) {
     return (
@@ -30,7 +64,11 @@ export function MessageList() {
 
   return (
     <>
-      <ScrollArea ref={scrollRef} className="h-full px-4 py-4">
+      <div
+        ref={scrollRef}
+        className="h-full px-4 py-4 overflow-auto scroll-smooth"
+        onScroll={handleScroll}
+      >
         <div className="space-y-4">
           {messages.map((message) => {
             const isCurrentUser = message.senderId === currentUser?.id
@@ -65,39 +103,46 @@ export function MessageList() {
                     </span>
                   </div>
 
-                  <div
-                    className={cn(
-                      "rounded-lg overflow-hidden",
-                      !hasImage && "px-4 py-2",
-                      isCurrentUser
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted"
+                    {/* Unread Count */}
+                    {(message.unreadCount || 0) > 0 && (
+                      <span className="text-xs text-yellow-500 font-medium self-end mb-1">
+                        {message.unreadCount}
+                      </span>
                     )}
-                  >
-                    {hasImage ? (
-                      <div className="space-y-2">
-                        <img
-                          src={message.imageData}
-                          alt="첨부 이미지"
-                          className="max-w-xs max-h-64 rounded cursor-pointer hover:opacity-90 transition-opacity"
-                          onClick={() => setSelectedImage(message.imageData!)}
-                        />
-                        {message.content && message.content !== '이미지' && (
-                          <p className="text-sm px-4 py-2">{message.content}</p>
-                        )}
-                      </div>
-                    ) : (
-                      <p className="text-sm whitespace-pre-wrap break-words">
-                        {message.content}
-                      </p>
-                    )}
+
+                    <div
+                      className={cn(
+                        "rounded-lg overflow-hidden",
+                        !hasImage && "px-4 py-2",
+                        isCurrentUser
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted"
+                      )}
+                    >
+                      {hasImage ? (
+                        <div className="space-y-2">
+                          <img
+                            src={message.imageData}
+                            alt="첨부 이미지"
+                            className="max-w-xs max-h-64 rounded cursor-pointer hover:opacity-90 transition-opacity"
+                            onClick={() => setSelectedImage(message.imageData!)}
+                          />
+                          {message.content && message.content !== '이미지' && (
+                            <p className="text-sm px-4 py-2">{message.content}</p>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-sm whitespace-pre-wrap break-words">
+                          {message.content}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
             )
           })}
         </div>
-      </ScrollArea>
+      </div>
 
       {/* Fullscreen Image Viewer */}
       <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>

@@ -156,11 +156,6 @@ export default function RegisterPage() {
             </p>
           </div>
 
-          <div className="mt-4 text-center">
-            <Link href="/browser" className="text-sm text-gray-500 hover:text-gray-700">
-              익명으로 계속하기 →
-            </Link>
-          </div>
         </div>
       </div>
     </div>
