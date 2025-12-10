@@ -2,10 +2,12 @@
 
 import { usePathname, useRouter } from 'next/navigation'
 import { Users, MessageCircle, Settings } from 'lucide-react'
+import { useThemeStore } from '@/store/theme-store'
 
 export function BottomNav() {
   const pathname = usePathname()
   const router = useRouter()
+  const { themeColor } = useThemeStore()
 
   const navItems = [
     {
@@ -25,8 +27,16 @@ export function BottomNav() {
     }
   ]
 
+  const colorClasses = {
+    blue: 'bg-blue-200/30',
+    purple: 'bg-purple-200/30',
+    green: 'bg-green-200/30',
+    orange: 'bg-orange-200/30',
+    pink: 'bg-pink-200/30'
+  }
+
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-background border-t z-50">
+    <div className={`fixed bottom-0 left-0 right-0 ${colorClasses[themeColor]} backdrop-blur-sm z-50`}>
       <nav className="flex items-center justify-around max-w-lg mx-auto">
         {navItems.map((item) => {
           const Icon = item.icon

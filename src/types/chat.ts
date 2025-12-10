@@ -7,6 +7,7 @@ export interface Message {
   status?: 'sending' | 'sent' | 'failed'
   imageUrl?: string
   imageData?: string  // base64 encoded image
+  unreadCount?: number
 }
 
 export interface User {

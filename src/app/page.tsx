@@ -44,10 +44,6 @@ export default function HomePage() {
             </Link>
           </div>
 
-          <Link href="/browser" className="text-gray-500 hover:text-gray-700 underline">
-            익명으로 계속하기
-          </Link>
-
           <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="bg-white p-6 rounded-xl shadow-md">
               <div className="text-4xl mb-3">⚡</div>

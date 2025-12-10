@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useAuthStore } from '@/store/auth-store'
+import { useThemeStore } from '@/store/theme-store'
 import { Button } from '@/components/ui/button'
 import { Avatar } from '@/components/ui/avatar'
 import { useToast } from '@/components/ui/toast'
@@ -21,6 +22,7 @@ export default function UserProfilePage() {
   const params = useParams()
   const userId = params.id as string
   const { token, user: currentUser } = useAuthStore()
+  const { themeColor } = useThemeStore()
   const { showToast } = useToast()
   const [isHydrated, setIsHydrated] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -113,10 +115,18 @@ export default function UserProfilePage() {
     return null
   }
 
+  const colorClasses = {
+    blue: 'bg-blue-200/30',
+    purple: 'bg-purple-200/30',
+    green: 'bg-green-200/30',
+    orange: 'bg-orange-200/30',
+    pink: 'bg-pink-200/30'
+  }
+
   return (
-    <div className="flex flex-col h-screen bg-background">
+    <div className="flex flex-col h-screen bg-gradient-to-b from-background to-muted/20">
       {/* Header */}
-      <div className="flex items-center gap-3 border-b p-4">
+      <div className={`flex items-center gap-3 p-4 ${colorClasses[themeColor]} backdrop-blur-sm`}>
         <Button
           variant="ghost"
           size="icon"
@@ -131,11 +141,13 @@ export default function UserProfilePage() {
       <div className="flex-1 overflow-y-auto p-6">
         {/* Profile Header */}
         <div className="flex flex-col items-center mb-8">
-          <Avatar
-            src={profile.avatar}
-            fallback={profile.username[0]?.toUpperCase() || '?'}
-            className="h-24 w-24 text-4xl mb-4"
-          />
+          <div className="relative mb-4">
+            <Avatar
+              src={profile.avatar}
+              fallback={profile.username[0]?.toUpperCase() || '?'}
+              className="h-32 w-32 ring-4 ring-primary/20 shadow-xl text-4xl"
+            />
+          </div>
           <h2 className="text-2xl font-bold mb-2">{profile.username}</h2>
           {profile.statusMessage && (
             <p className="text-muted-foreground text-center max-w-md">
@@ -145,21 +157,15 @@ export default function UserProfilePage() {
         </div>
 
         {/* Profile Info */}
-        <div className="max-w-md mx-auto space-y-4 mb-8">
-          <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
-            <UserIcon className="h-5 w-5 text-muted-foreground" />
-            <div>
-              <p className="text-xs text-muted-foreground">사용자명</p>
-              <p className="font-medium">{profile.username}</p>
-            </div>
+        <div className="max-w-md mx-auto space-y-3 mb-8">
+          <div className="bg-gradient-to-br from-background/60 to-muted/30 backdrop-blur-sm rounded-2xl p-4 shadow-sm">
+            <p className="text-xs text-muted-foreground mb-1">사용자명</p>
+            <p className="font-medium">{profile.username}</p>
           </div>
 
-          <div className="flex items-center gap-3 p-4 bg-muted rounded-lg">
-            <Mail className="h-5 w-5 text-muted-foreground" />
-            <div>
-              <p className="text-xs text-muted-foreground">이메일</p>
-              <p className="font-medium">{profile.email}</p>
-            </div>
+          <div className="bg-gradient-to-br from-background/60 to-muted/30 backdrop-blur-sm rounded-2xl p-4 shadow-sm">
+            <p className="text-xs text-muted-foreground mb-1">이메일</p>
+            <p className="font-medium">{profile.email}</p>
           </div>
         </div>
 
@@ -167,7 +173,7 @@ export default function UserProfilePage() {
         <div className="max-w-md mx-auto">
           <Button
             onClick={handleStartChat}
-            className="w-full flex items-center justify-center gap-2"
+            className="w-full h-12 flex items-center justify-center gap-2 rounded-2xl shadow-md"
           >
             <MessageCircle className="h-5 w-5" />
             채팅하기

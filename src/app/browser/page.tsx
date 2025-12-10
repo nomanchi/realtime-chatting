@@ -19,19 +19,21 @@ export default function BrowserPage() {
   const router = useRouter()
   const { setCurrentUser, setOnlineUsers, addMessage, setConnectionStatus, onlineUsers } = useChatStore()
   const { isAuthenticated, user: authUser, logout: clearAuth, token } = useAuthStore()
-  const [userName, setUserName] = useState('')
-  const [isJoined, setIsJoined] = useState(false)
 
-  // 인증된 사용자는 자동으로 참여
+  // 인증 체크 및 리다이렉트
   useEffect(() => {
-    if (isAuthenticated && authUser && !isJoined) {
+    if (!isAuthenticated) {
+      router.push('/login')
+      return
+    }
+
+    if (authUser) {
       const user = {
         id: authUser.id,
         name: authUser.username,
         isOnline: true
       }
       setCurrentUser(user)
-      setIsJoined(true)
 
       // Connect to Socket.io server with token
       socketManager.connect(authUser.username, token || undefined)
@@ -55,110 +57,22 @@ export default function BrowserPage() {
         })))
       })
     }
-  }, [isAuthenticated, authUser, isJoined, token, setCurrentUser, addMessage, setConnectionStatus, setOnlineUsers])
-
-  const handleJoin = () => {
-    if (!userName.trim()) return
-
-    const user = {
-      id: `user-${Date.now()}`,
-      name: userName,
-      isOnline: true
-    }
-    setCurrentUser(user)
-    setIsJoined(true)
-
-    // Connect to Socket.io server (anonymous)
-    socketManager.connect(userName)
-
-    // Listen for messages
-    socketManager.onMessage((message) => {
-      addMessage(message)
-    })
-
-    // Listen for connection status
-    socketManager.onStatus((status) => {
-      setConnectionStatus(status as any)
-    })
-
-    // Listen for online users
-    socketManager.onUsers((users) => {
-      setOnlineUsers(users.map(u => ({
-        id: u.id,
-        name: u.name,
-        isOnline: true
-      })))
-    })
-  }
+  }, [isAuthenticated, authUser, token, router, setCurrentUser, addMessage, setConnectionStatus, setOnlineUsers])
 
   const handleLogout = async () => {
     try {
       await logoutApi()
       clearAuth()
       socketManager.disconnect()
-      router.push('/')
+      router.push('/login')
     } catch (error) {
       console.error('로그아웃 오류:', error)
     }
   }
 
-  useEffect(() => {
-    return () => {
-      if (isJoined) {
-        socketManager.disconnect()
-      }
-    }
-  }, [isJoined])
-
-  if (!isJoined) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-background">
-        <div className="w-full max-w-md p-8 space-y-4 bg-card rounded-lg border shadow-lg">
-          <div className="text-center space-y-2">
-            <h1 className="text-2xl font-bold">실시간 채팅</h1>
-            <p className="text-muted-foreground">
-              {isAuthenticated ? '채팅에 참여 중...' : '이름을 입력하고 채팅에 참여하세요'}
-            </p>
-          </div>
-
-          {!isAuthenticated && (
-            <>
-              <div className="space-y-4">
-                <Input
-                  placeholder="이름을 입력하세요"
-                  value={userName}
-                  onChange={(e) => setUserName(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleJoin()}
-                  className="text-lg"
-                  autoFocus
-                />
-                <Button
-                  onClick={handleJoin}
-                  className="w-full"
-                  size="lg"
-                  disabled={!userName.trim()}
-                >
-                  채팅 참여하기
-                </Button>
-              </div>
-
-              <div className="text-center text-sm text-muted-foreground">
-                <p>또는</p>
-                <div className="flex gap-2 justify-center mt-2">
-                  <Link href="/login" className="text-primary hover:underline">
-                    로그인
-                  </Link>
-                  <span>·</span>
-                  <Link href="/register" className="text-primary hover:underline">
-                    회원가입
-                  </Link>
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-    )
+  // 인증되지 않은 경우 아무것도 렌더링하지 않음 (리다이렉트 대기)
+  if (!isAuthenticated) {
+    return null
   }
 
   return (
@@ -167,7 +81,7 @@ export default function BrowserPage() {
       <div className="flex flex-col flex-1">
         <div className="flex items-center justify-between px-4 py-3 border-b shrink-0">
           <h1 className="text-xl font-semibold">실시간 채팅</h1>
-          {isAuthenticated && authUser && (
+          {authUser && (
             <div className="flex items-center gap-3">
               <div className="text-sm">
                 <span className="text-muted-foreground">로그인:</span>{' '}

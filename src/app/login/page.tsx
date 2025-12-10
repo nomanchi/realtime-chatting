@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuthStore } from '@/store/auth-store'
@@ -10,7 +10,8 @@ import { Input } from '@/components/ui/input'
 
 export default function LoginPage() {
   const router = useRouter()
-  const { login: setAuth } = useAuthStore()
+  const { login: setAuth, isAuthenticated } = useAuthStore()
+  const [isHydrated, setIsHydrated] = useState(false)
 
   const [formData, setFormData] = useState({
     email: '',
@@ -18,6 +19,18 @@ export default function LoginPage() {
   })
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+
+  // Hydration 체크
+  useEffect(() => {
+    setIsHydrated(true)
+  }, [])
+
+  // 이미 로그인된 사용자는 채팅방으로 리다이렉트
+  useEffect(() => {
+    if (isHydrated && isAuthenticated) {
+      router.push('/chatrooms')
+    }
+  }, [isHydrated, isAuthenticated, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -27,7 +40,7 @@ export default function LoginPage() {
     try {
       const response = await login(formData)
       setAuth(response.user, response.token)
-      router.push('/friends')
+      router.push('/chatrooms')
     } catch (err: any) {
       setError(err.message || '로그인에 실패했습니다.')
     } finally {
@@ -99,12 +112,6 @@ export default function LoginPage() {
                 회원가입
               </Link>
             </p>
-          </div>
-
-          <div className="mt-4 text-center">
-            <Link href="/browser" className="text-sm text-gray-500 hover:text-gray-700">
-              익명으로 계속하기 →
-            </Link>
           </div>
         </div>
       </div>

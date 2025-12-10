@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { useThemeStore } from '@/store/theme-store'
 import { Avatar } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Search, UserPlus } from 'lucide-react'
@@ -13,6 +14,7 @@ interface Friend {
   username: string
   email: string
   avatar?: string
+  statusMessage?: string
   friendshipId: string
   friendshipStatus: string
   isRequester: boolean
@@ -22,6 +24,7 @@ interface Friend {
 export default function FriendsPage() {
   const router = useRouter()
   const { token, user } = useAuthStore()
+  const { themeColor } = useThemeStore()
   const [friends, setFriends] = useState<Friend[]>([])
   const [isHydrated, setIsHydrated] = useState(false)
 
@@ -84,10 +87,18 @@ export default function FriendsPage() {
     }
   }, [token, fetchFriends])
 
+  const colorClasses = {
+    blue: 'bg-blue-200/30',
+    purple: 'bg-purple-200/30',
+    green: 'bg-green-200/30',
+    orange: 'bg-orange-200/30',
+    pink: 'bg-pink-200/30'
+  }
+
   return (
     <div className="flex flex-col h-screen bg-background">
       {/* Header */}
-      <div className="border-b p-4">
+      <div className={`p-4 pb-2 ${colorClasses[themeColor]} backdrop-blur-sm`}>
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-bold">친구</h1>
           <div className="flex items-center gap-2">
@@ -156,7 +167,7 @@ export default function FriendsPage() {
                   <div className="flex-1 min-w-0">
                     <p className="font-medium">{friend.username}</p>
                     <p className="text-sm text-muted-foreground truncate">
-                      상태 메시지
+                      {friend.statusMessage || ''}
                     </p>
                   </div>
                 </div>

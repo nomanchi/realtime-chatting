@@ -149,7 +149,7 @@ export default function FriendRequestsPage() {
   return (
     <div className="flex flex-col h-screen bg-background">
       {/* Header */}
-      <div className="flex items-center gap-3 border-b p-4">
+      <div className="flex items-center gap-3 p-4 pb-3">
         <Button
           variant="ghost"
           size="icon"
@@ -161,7 +161,7 @@ export default function FriendRequestsPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b">
+      <div className="flex">
         <button
           onClick={() => setActiveTab('received')}
           className={`flex-1 px-4 py-3 text-sm font-medium ${
