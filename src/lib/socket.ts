@@ -17,10 +17,14 @@ class SocketManager {
 
     this.currentUserName = userName
 
-    // Get server URL from current location (supports localhost and network access)
+    // Production: 현재 호스트 사용 / Development: localhost:4001
     const serverUrl = typeof window !== 'undefined'
-      ? `${window.location.protocol}//${window.location.hostname}:4001`
+      ? process.env.NODE_ENV === 'production'
+        ? `${window.location.protocol}//${window.location.host}`  // Production: 같은 호스트
+        : `${window.location.protocol}//${window.location.hostname}:4001`  // Development
       : 'http://localhost:4001'
+
+    console.log('🔌 Connecting to Socket.IO:', serverUrl)
 
     // Connect to Socket.io server with optional authentication
     this.socket = io(serverUrl, {

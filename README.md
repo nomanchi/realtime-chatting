@@ -10,16 +10,30 @@ Next.js와 Socket.io 기반 실시간 멀티유저 채팅 애플리케이션입�
 
 ## ✨ 주요 기능
 
-- 🔄 **실시간 메시징**: Socket.io를 통한 즉각적인 메시지 전송/수신
+### 💬 실시간 채팅
+- 🔄 **Socket.io 실시간 메시징**: 즉각적인 양방향 통신
+- 👥 **1:1 및 그룹 채팅**: 개인 대화 및 다중 사용자 채팅방
+- 📱 **읽지 않은 메시지 카운트**: 실시간 알림 뱃지
+- 📷 **이미지 전송**: 사진 업로드 및 미리보기
+- 😊 **이모지 지원**: 이모지 피커 내장
+
+### 👤 사용자 관리
 - 🔐 **JWT 인증 시스템**: 안전한 사용자 인증 및 세션 관리
-- 💾 **MongoDB 데이터베이스**: 사용자 정보 및 메시지 영구 저장
-- 👥 **멀티유저 지원**: 여러 사용자 동시 접속 및 채팅
-- 📱 **플랫폼 분리**: Flutter WebView 및 PC Browser 최적화 UI
-- 🌓 **다크 모드**: 자동 다크 모드 지원
-- 📊 **실시간 사용자 목록**: 접속 중인 사용자 실시간 표시
-- 💬 **메시지 히스토리**: DB에서 이전 메시지 자동 로드
-- 🔌 **자동 재연결**: 연결 끊김 시 자동 복구
-- 👤 **익명 채팅 지원**: 로그인 없이도 채팅 가능
+- 👫 **친구 시스템**: 친구 추가, 요청, 수락
+- 🎨 **프로필 커스터마이징**: 아바타, 테마 색상 설정
+- 📊 **사용자 검색**: 이메일/사용자명으로 검색
+
+### 📱 PWA 기능
+- 📲 **홈 화면에 추가**: 네이티브 앱처럼 설치 가능
+- 🔌 **오프라인 지원**: Service Worker 캐싱
+- 📱 **Standalone 모드**: 전체 화면 앱 경험
+- 🎨 **앱 아이콘 및 Manifest**: 완전한 PWA 구현
+
+### 🎨 UI/UX
+- 🌓 **다크 모드**: 시스템 테마 자동 감지
+- 🎨 **테마 커스터마이징**: 8가지 색상 옵션
+- 📱 **반응형 디자인**: 모바일/태블릿/데스크탑 최적화
+- 🔄 **자동 재연결**: 네트워크 끊김 시 자동 복구
 
 ## 🛠 기술 스택
 
@@ -70,13 +84,9 @@ MONGODB_URI=mongodb://localhost:27017/realtime-chatting
 # JWT
 JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
 JWT_EXPIRES_IN=7d
-
-# Server
-NEXT_PUBLIC_API_URL=http://localhost:4001
-NEXT_PUBLIC_SOCKET_URL=http://localhost:4001
 ```
 
-> 📝 자세한 환경 변수 설정 가이드는 [ENV_SETUP.md](./ENV_SETUP.md)를 참조하세요.
+> **참고**: API URL은 더 이상 필요하지 않습니다. 앱은 자동으로 같은 호스트의 API를 사용합니다.
 
 ### MongoDB 설정
 
@@ -112,9 +122,8 @@ npm run dev
 
 ## 📚 문서
 
-- **[개발자 가이드](./DEVELOPER_GUIDE.md)**: 개발자를 위한 상세한 기술 문서
-- **[사용자 가이드](./USER_GUIDE.md)**: 사용자를 위한 기능 사용 가이드
-- **[환경 변수 설정](./ENV_SETUP.md)**: 환경 변수 설정 상세 가이드
+- **[Render 배포 가이드](./DEPLOYMENT.md)**: 무료로 Render에 배포하는 방법
+- **[PWA 구현 상세](./walkthrough.md)**: Service Worker 및 PWA 기능 설명
 
 ## 📖 사용 방법
 
@@ -200,15 +209,17 @@ realtime-chatting/
 │   │   │   ├── button.tsx
 │   │   │   ├── input.tsx
 │   │   │   └── scroll-area.tsx
-│   │   └── chat/               # 채팅 컴포넌트
-│   │       ├── ChatHeader.tsx
-│   │       ├── MessageInput.tsx
-│   │       └── MessageList.tsx
+│   │   ├── chat/               # 채팅 컴포넌트
+│   │   │   ├── ChatHeader.tsx
+│   │   │   ├── MessageInput.tsx
+│   │   │   └── MessageList.tsx
+│   │   └── pwa/                # PWA 컴포넌트
+│   │       └── ServiceWorkerRegister.tsx
 │   ├── lib/
 │   │   ├── mongodb.ts          # MongoDB 연결
 │   │   ├── jwt.ts              # JWT 토큰 생성/검증
 │   │   ├── auth.ts             # 인증 미들웨어
-│   │   ├── api.ts              # API 클라이언트
+│   │   ├── api.ts              # API 클라이언트 (상대 경로 사용)
 │   │   ├── platform.ts         # 플랫폼 감지
 │   │   ├── socket.ts           # Socket.io 클라이언트
 │   │   └── utils.ts            # 유틸리티
@@ -261,31 +272,35 @@ realtime-chatting/
 
 ## 🌐 배포
 
-### Vercel (Frontend Only)
+### Render (무료, 권장) 🚀
+
+**완전 무료**로 Socket.IO를 포함한 전체 스택을 배포할 수 있습니다!
 
 ```bash
-npm i -g vercel
-vercel --prod
+# 1. 코드를 GitHub에 푸시
+git push origin master
+
+# 2. Render.com에서 배포
+# 자세한 가이드는 아래 문서 참조
 ```
 
-> ⚠️ **주의**: Vercel의 Serverless 환경에서는 Socket.io가 제한적으로 작동합니다.
+📖 **상세 배포 가이드**: [DEPLOYMENT.md](./DEPLOYMENT.md) 참조
 
-### 완전한 WebSocket 지원 (추천)
+**배포 후 자동으로 작동하는 기능:**
+- ✅ API 엔드포인트 자동 연결
+- ✅ Socket.IO 서버 자동 연결
+- ✅ PWA 기능 (홈 화면 추가, 오프라인 지원)
+- ✅ HTTPS 자동 적용
 
-Socket.io 서버를 위한 전용 호스팅:
+**무료 티어 제한:**
+- 15분 비활성 시 sleep (재접속 시 30초~1분 소요)
+- 월 750시간 무료 (충분함)
 
-- **Railway.app** (추천)
-- **Render.com** (무료 티어)
-- **Heroku**
-- **자체 VPS** (DigitalOcean, AWS EC2)
+### 다른 배포 옵션
 
-배포 후 `src/lib/socket.ts`에서 서버 URL 업데이트:
-
-```typescript
-const serverUrl = typeof window !== 'undefined'
-  ? `${window.location.protocol}//${window.location.hostname}:4001`
-  : 'https://your-deployed-server.com'  // 배포된 서버 URL로 변경
-```
+- **Railway.app**: Sleep 없음, $5 크레딧/월
+- **Vercel**: ⚠️ Socket.IO 미지원 (프론트엔드만 배포 가능)
+- **자체 VPS**: 완전한 제어 (DigitalOcean, AWS EC2)
 
 ## 📱 Flutter 통합
 

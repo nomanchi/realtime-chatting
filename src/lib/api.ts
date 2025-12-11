@@ -1,7 +1,5 @@
 import { useAuthStore } from '@/store/auth-store'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001'
-
 interface RegisterData {
   email: string
   password: string
@@ -28,7 +26,7 @@ interface AuthResponse {
  * 회원가입
  */
 export async function register(data: RegisterData): Promise<AuthResponse> {
-  const response = await fetch(`${API_URL}/api/auth/register`, {
+  const response = await fetch(`/api/auth/register`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -49,7 +47,7 @@ export async function register(data: RegisterData): Promise<AuthResponse> {
  * 로그인
  */
 export async function login(data: LoginData): Promise<AuthResponse> {
-  const response = await fetch(`${API_URL}/api/auth/login`, {
+  const response = await fetch(`/api/auth/login`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -70,7 +68,7 @@ export async function login(data: LoginData): Promise<AuthResponse> {
  * 로그아웃
  */
 export async function logout(): Promise<void> {
-  const response = await fetch(`${API_URL}/api/auth/logout`, {
+  const response = await fetch(`/api/auth/logout`, {
     method: 'POST',
     credentials: 'include'
   })
@@ -86,7 +84,7 @@ export async function logout(): Promise<void> {
 export async function getCurrentUser(): Promise<any> {
   const token = useAuthStore.getState().token
 
-  const response = await fetch(`${API_URL}/api/auth/me`, {
+  const response = await fetch(`/api/auth/me`, {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${token}`,
