@@ -108,8 +108,19 @@ export function MessageInput({ roomId, onMessageSent }: MessageInputProps) {
         })
 
         if (response.ok) {
+          const data = await response.json()
           setMessage('')
           onMessageSent?.()
+
+          // Socket.IO로 실시간 알림
+          const { socketManager } = require('@/lib/socket')
+          if (data.roomId && data.memberIds) {
+            socketManager.emit('message:new', {
+              roomId: data.roomId,
+              memberIds: data.memberIds
+            })
+            console.log('✅ 이미지 메시지 Socket.IO 알림 전송 완료')
+          }
         }
       } catch (error) {
         console.error('이미지 전송 오류:', error)

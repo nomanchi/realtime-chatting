@@ -26,6 +26,7 @@ export default function FriendsPage() {
   const { token, user } = useAuthStore()
   const { themeColor } = useThemeStore()
   const [friends, setFriends] = useState<Friend[]>([])
+  const [friendRequestCount, setFriendRequestCount] = useState(0)
   const [isHydrated, setIsHydrated] = useState(false)
 
   // Hydration 체크
@@ -60,11 +61,34 @@ export default function FriendsPage() {
     }
   }, [token])
 
+  // 친구 요청 개수 조회
+  const fetchFriendRequests = useCallback(async () => {
+    if (!token) return
+
+    try {
+      const response = await fetch('/api/friends?status=pending', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        // 받은 요청만 카운트
+        const receivedCount = data.friends.filter((f: Friend) => !f.isRequester).length
+        setFriendRequestCount(receivedCount)
+      }
+    } catch (error) {
+      console.error('친구 요청 조회 오류:', error)
+    }
+  }, [token])
+
   useEffect(() => {
     if (token) {
       fetchFriends()
+      fetchFriendRequests()
     }
-  }, [token, fetchFriends])
+  }, [token, fetchFriends, fetchFriendRequests])
 
   // Socket.IO 실시간 연결
   useEffect(() => {
@@ -75,17 +99,25 @@ export default function FriendsPage() {
     // Socket 연결
     socketManager.connect('User', token)
 
+    // 친구 요청 받기 이벤트
+    const unsubscribeRequest = socketManager.onFriendRequest(() => {
+      console.log('새로운 친구 요청!')
+      fetchFriendRequests()
+    })
+
     // 친구 수락 이벤트 - 친구 목록 새로고침
     const unsubscribeAccepted = socketManager.onFriendAccepted(() => {
       console.log('친구 요청이 수락되었습니다!')
       fetchFriends()
+      fetchFriendRequests()
     })
 
     // 정리
     return () => {
+      unsubscribeRequest()
       unsubscribeAccepted()
     }
-  }, [token, fetchFriends])
+  }, [token, fetchFriends, fetchFriendRequests])
 
   const colorClasses = {
     blue: 'bg-blue-200/30',
@@ -113,8 +145,16 @@ export default function FriendsPage() {
               variant="ghost"
               size="sm"
               onClick={() => router.push('/settings/friend-requests')}
+              className="relative"
             >
               <UserPlus className="h-5 w-5" />
+              {friendRequestCount > 0 && (
+                <div className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center">
+                  <span className="text-[10px] text-white font-bold">
+                    {friendRequestCount > 9 ? '9+' : friendRequestCount}
+                  </span>
+                </div>
+              )}
             </Button>
           </div>
         </div>

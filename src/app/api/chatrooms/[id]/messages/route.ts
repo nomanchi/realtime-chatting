@@ -89,8 +89,19 @@ export async function GET(
 
           const lastReadMessageId = memberChatRoom?.lastReadMessageId
 
-          // lastReadMessageId가 없거나 현재 메시지보다 작으면 읽지 않음
-          if (!lastReadMessageId || lastReadMessageId.toString() < messageObj._id.toString()) {
+          // lastReadMessageId가 없으면 읽지 않음
+          if (!lastReadMessageId) {
+            unreadCount++
+            return
+          }
+
+          // lastReadMessageId와 현재 메시지 ID를 비교 (ObjectId 비교)
+          // ObjectId는 timestamp를 포함하므로 getTimestamp()로 비교
+          const lastReadTimestamp = lastReadMessageId.getTimestamp()
+          const currentTimestamp = messageObj._id.getTimestamp()
+
+          // 현재 메시지가 lastRead보다 나중에 생성되었으면 읽지 않음
+          if (currentTimestamp > lastReadTimestamp) {
             unreadCount++
           }
         })

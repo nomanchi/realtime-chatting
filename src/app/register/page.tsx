@@ -46,7 +46,7 @@ export default function RegisterPage() {
         username: formData.username
       })
       setAuth(response.user, response.token)
-      router.push('/friends')
+      router.push('/chatrooms')
     } catch (err: any) {
       setError(err.message || '회원가입에 실패했습니다.')
     } finally {

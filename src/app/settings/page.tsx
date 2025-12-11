@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Avatar } from '@/components/ui/avatar'
 import { BottomNav } from '@/components/layout/BottomNav'
 import { Moon, Sun, LogOut, ChevronRight, UserCog, Trash2, Palette } from 'lucide-react'
+import { logout as logoutApi } from '@/lib/api'
 
 export default function SettingsPage() {
   const router = useRouter()
@@ -23,9 +24,17 @@ export default function SettingsPage() {
     setIsHydrated(true)
   }, [])
 
-  const handleLogout = () => {
-    logout()
-    router.push('/login')
+  const handleLogout = async () => {
+    try {
+      await logoutApi()  // 서버 쿠키 삭제
+      logout()           // Zustand 상태 초기화
+      router.push('/login')
+    } catch (error) {
+      console.error('로그아웃 오류:', error)
+      // 에러가 발생해도 로컬 상태는 초기화
+      logout()
+      router.push('/login')
+    }
   }
 
   if (!user || !isHydrated) {
